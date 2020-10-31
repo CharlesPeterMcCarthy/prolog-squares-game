@@ -10,3 +10,4 @@ square(2, 1, e).
 square(1, 3, e).
 square(1, 2, e).
 square(1, 1, e).
+
