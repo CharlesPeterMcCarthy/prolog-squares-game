@@ -1,4 +1,5 @@
 :- ensure_loaded('db.pl').
+:- ensure_loaded('directions.pl').
 
 start :-
     write('Welcome to the Squares game!.'), nl,
@@ -52,15 +53,6 @@ print_board([square(_, _, Item)|T]) :-
 
 get_player_location(X, Y) :-
     square(X, Y, 'P').
-
-move(north) :-
-    write('Moving north...'), nl,
-    square(R, C, 'P'),
-    write(R),
-    write(C),
-    empty_square(2, 2),
-    NewRow is R - 1,
-    move_player_to_square(NewRow, 2).
 
 option(print) :-
     findall(square(Row, Col, Item), square(Row, Col, Item), Squares),
