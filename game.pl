@@ -17,9 +17,9 @@ start :-
     ),
     createBoard(Size),
     place_player_in_center,
-%    get_item_drop_count(ItemDropCount),
-    board_size(S),
-    drop_items(S),
+    get_item_drop_count(C),
+    drop_items(C, true),
+    drop_items(C, false),
     persistBoard,
     nl, nl,
     write('Type "print." to view the board.'), nl,
@@ -28,11 +28,12 @@ start :-
     write('Type "stop." to quit.'), nl,
     process_option.
 
-get_item_drop_count(Count) :-
+get_item_drop_count(C) :-
     board_size(Size),
-    C is ceiling(Size / 3),
-    write('Generating '), write(C), write(' Items'), nl,
-    Count is ceiling(Size / 3).
+    (
+        Size < 5 -> C is ceiling(Size / 2)
+        ; C is Size
+    ).
 
 process_option :- write('Option? '),
     read(Option),
@@ -55,15 +56,21 @@ replace_square(Row, Col, Item) :-
     retract(square(Row, Col, _)),
     assertz(square(Row, Col, Item)).
 
-drop_item(RandomRow, RandomCol) :-
+drop_item(RandomRow, RandomCol, Desired) :-
     format('Dropping gold at ~wx~w',[RandomRow, RandomCol]), nl,
     empty_square(RandomRow, RandomCol),
-    random_items(RandomItems),
+    (
+        Desired = true -> desired_items(RandomItems)
+        ; undesired_items(RandomItems)
+    ),
+%    desired_items(RandomItems),
     random(0, 3, RI),
     nth0(RI, RandomItems, RandomItem),
     replace_square(RandomRow, RandomCol, RandomItem).
 
-drop_items(N) :-
+% N is the count of items to drop
+% D is a value that specifies whether to drop desired items (true) or undesired items (false)
+drop_items(N, D) :-
     format('Dropping item ~w', [N]), nl,
     board_size(BoardSize),
     RangeSize is BoardSize + 1,
@@ -71,15 +78,16 @@ drop_items(N) :-
     random(1, RangeSize, RandomCol),
     square(RandomRow, RandomCol, ItemToCheck),
     (
-        ItemToCheck = e -> drop_item(RandomRow, RandomCol), ItemsLeft is N - 1
+        ItemToCheck = e -> drop_item(RandomRow, RandomCol, D), ItemsLeft is N - 1
         ; ItemsLeft is N % ItemsLeft must be instantiated - keep value to prevent losing drop items
     ),
     (
-        ItemsLeft > 0 -> drop_items(ItemsLeft)
+        ItemsLeft > 0 -> drop_items(ItemsLeft, D)
         ; true
     ).
 
-random_items(['G', 'S', 'B']).
+desired_items(['G', 'S', 'B']).
+undesired_items(['X', 'Y', 'Z']).
 
 list_non_empty_adjacent_squares :-
     user_square(R, C),
