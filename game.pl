@@ -3,13 +3,22 @@
 :- ensure_loaded('directions.pl').
 
 start :-
-    write('Welcome to the Squares game!.'), nl,
+    write('Welcome to the Squares game!'), nl,
+    write('What size board would you like to play with? Enter board size:'), nl,
+    read(Size),
+    (
+        not(integer(Size)) -> write('You must enter an integer'), nl
+        ; integer(Size) -> format('Generating a ~wx~w board.', [Size, Size]), nl
+    ),
+    integer(Size),
+    createBoard(Size),
+    place_player_in_center,
+    persistBoard,
+    nl, nl,
     write('Type "print." to view the board.'), nl,
     write('Type "adj." to see adjacent squares.'), nl,
     write('Type "move." to move in another direction.'), nl,
     write('Type "stop." to quit.'), nl,
-    nl,
-%    place_player_in_center,
     process_option.
 
 process_option :- write('Option? '),
