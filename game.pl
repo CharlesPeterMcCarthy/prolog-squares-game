@@ -17,6 +17,9 @@ start :-
     ),
     createBoard(Size),
     place_player_in_center,
+%    get_item_drop_count(ItemDropCount),
+    board_size(S),
+    drop_items(S),
     persistBoard,
     nl, nl,
     write('Type "print." to view the board.'), nl,
@@ -24,6 +27,12 @@ start :-
     write('Type "move." to move in another direction.'), nl,
     write('Type "stop." to quit.'), nl,
     process_option.
+
+get_item_drop_count(Count) :-
+    board_size(Size),
+    C is ceiling(Size / 3),
+    write('Generating '), write(C), write(' Items'), nl,
+    Count is ceiling(Size / 3).
 
 process_option :- write('Option? '),
     read(Option),
@@ -41,6 +50,36 @@ move_player_to_square(Row, Col) :-
 empty_square(Row, Col) :-
     retract(square(Row, Col, _)),
     assertz(square(Row, Col, e)).
+
+replace_square(Row, Col, Item) :-
+    retract(square(Row, Col, _)),
+    assertz(square(Row, Col, Item)).
+
+drop_item(RandomRow, RandomCol) :-
+    format('Dropping gold at ~wx~w',[RandomRow, RandomCol]), nl,
+    empty_square(RandomRow, RandomCol),
+    random_items(RandomItems),
+    random(0, 3, RI),
+    nth0(RI, RandomItems, RandomItem),
+    replace_square(RandomRow, RandomCol, RandomItem).
+
+drop_items(N) :-
+    format('Dropping item ~w', [N]), nl,
+    board_size(BoardSize),
+    RangeSize is BoardSize + 1,
+    random(1, RangeSize, RandomRow),
+    random(1, RangeSize, RandomCol),
+    square(RandomRow, RandomCol, ItemToCheck),
+    (
+        ItemToCheck = e -> drop_item(RandomRow, RandomCol), ItemsLeft is N - 1
+        ; ItemsLeft is N % ItemsLeft must be instantiated - keep value to prevent losing drop items
+    ),
+    (
+        ItemsLeft > 0 -> drop_items(ItemsLeft)
+        ; true
+    ).
+
+random_items(['G', 'S', 'B']).
 
 list_non_empty_adjacent_squares :-
     user_square(R, C),
@@ -81,7 +120,13 @@ is_user_square(square(_, _, Item)) :-
     Item = 'P'.
 
 is_empty_square(square(_, _, Item)) :-
-    Item = 'e'.
+    write('Item: '), nl,
+    write(Item), nl,
+    write(e), nl,
+    Item = e.
+
+is_non_empty_square(square(_, _, Item)) :-
+    Item = not('e').
 
 user_square(Row, Col) :-
     square(Row, Col, 'P').
@@ -102,7 +147,6 @@ list_adjacent_options([square(R, C, _)|T]) :-
         ;
             write('Received unknown argument.'), nl
     ),
-%    format('You can travel ~w', []), nl,
     list_adjacent_options(T).
 
 
@@ -122,7 +166,6 @@ option(adj) :- % List squares that are adjacent to the player
     get_adjacent_locations(Vertical, VReduced, _),
     append(HReduced, VReduced, Adj),
     list_adjacent_options(Adj),
-%    list_adjacent_options(VReduced),
     process_option.
 
 option(non) :- % List squares that are adjacent to the player
