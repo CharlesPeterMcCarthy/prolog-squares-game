@@ -1,3 +1,8 @@
+direction(north).
+direction(south).
+direction(east).
+direction(west).
+
 move(north) :-
     square(R, C, 'P'),
     NewRow is R - 1,
@@ -31,10 +36,10 @@ move(west) :-
     ).
 
 move_player(R, C, NR, NC, D) :-
+    format('Successfully moved ~w.', [D]), nl, nl,
     empty_square(R, C),
     check_for_dropped_item(NR, NC),
-    move_player_to_square(NR, NC),
-    format('Successfully moved ~w...', [D]), nl.
+    move_player_to_square(NR, NC).
 
 alert_wrong_direction(D) :-
     format('You cannot move ~w right now!', [D]), nl.

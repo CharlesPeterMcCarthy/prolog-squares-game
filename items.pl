@@ -13,7 +13,7 @@ check_for_dropped_item(R, C) :-
                             format('You found a desired item: ~w', [Name]),
                             save_item_to_inventory(Item),
                             save_item_position(R, C, Item)
-        ; member(Item, UI) -> lose_item(Item)
+        ; member(Item, UI) -> prompt_item_loss(Item)
         ; write('You moved to an empty square')
     ),
     nl,
@@ -33,26 +33,35 @@ inventory_to_item_names([II|T], [I|L]) :-
 item_name_from_inventory_item(inventory_item(I), N) :-
     item_type(I, N).
 
-lose_item(ItemFound) :-
-    write('Losing item'), nl,
+prompt_item_loss(ItemFound) :-
     item_type(ItemFound, ItemFoundName),
-    write(ItemFoundName), nl,
     findall(inventory_item(I), inventory_item(I), InventoryItems),
-    write(InventoryItems), nl,
     inventory_to_item_names(InventoryItems, InventoryItemNames),
-    write(InventoryItemNames), nl,
-    format('You found an undesired item: ~w.', [ItemFoundName]), nl,
-    format('Select an item from your inventory to lose: ~w.', [InventoryItemNames]), nl,
-    format('Type "g." for Gold, "s." for Silver or "b." for Bronze.'), nl,
-    read(ITL),
-    upcase_atom(ITL, UITL),
-    remove_item_from_inventory(UITL),
-    item_name_from_inventory_item(inventory_item(UITL), ItemDroppedName),
-    taken_item_position(R, C, UITL),
-    replace_square(R, C, UITL),
-    remove_item_position(R, C, UITL),
-    format('The ~w you chose to drop has been returned to its original position.', [ItemDroppedName]).
+    format('You found an undesired item: ~w.', [ItemFoundName]), nl, nl,
+    (
+        inventory_item(_) -> format('Select an item from your inventory to lose: ~w.', [InventoryItemNames]), nl, nl,
+                             format('Type "g." for Gold, "s." for Silver or "b." for Bronze.'), nl, nl,
+                             read(ITL),
+                             upcase_atom(ITL, UITL),
+                             print_line_breaker,
+                             desired_items(DesiredItems),
+                             (
+                                 member(UITL, DesiredItems) -> lose_item(UITL, ItemFound)
+                                 ; format('The value you entered (~w) is an invalid item.', [ITL]), nl, nl, prompt_item_loss(ItemFound)
+                             )
+        ; format('Looks like you don\'t have anything in your inventory to drop right now.'), nl, nl
+    ).
 
+lose_item(UITL, IF) :-
+    (
+        inventory_item(UITL) -> remove_item_from_inventory(UITL),
+                                item_name_from_inventory_item(inventory_item(UITL), ItemDroppedName),
+                                taken_item_position(R, C, UITL),
+                                replace_square(R, C, UITL),
+                                remove_item_position(R, C, UITL),
+                                format('The ~w you chose to drop has been returned to its original position.', [ItemDroppedName])
+        ; item_type(UITL, ItemName), format('You do not currently have any ~w in your inventory to drop.', [ItemName]), nl, nl, prompt_item_loss(IF)
+    ).
 
 save_item_to_inventory(I) :-
     assertz(inventory_item(I)),

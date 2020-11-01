@@ -12,7 +12,7 @@ start :-
     write('What size board would you like to play with? Enter board size:'), nl,
     read(Size),
     (
-        not(integer(Size)) -> write('You must enter an integer'), nl
+        not(integer(Size)) -> format('You must enter an integer. You entered: ~w', [Size]), nl, fail
         ; true
     ),
     (
@@ -20,20 +20,19 @@ start :-
         ; Size > 8 -> format('The maximum board size is 8x8. You entered the number ~w. Type "start." to try again.', [Size]), nl, fail
         ; true
     ),
-
     createBoard(Size),
     place_player_in_center,
     get_item_drop_count(C),
     drop_items(C, true),
     drop_items(C, false),
     persistBoard,
-    nl, nl,
-    write('Type "print." to view the board.'), nl,
-    write('Type "adj." to see adjacent squares.'), nl,
-    write('Type "move." to move in another direction.'), nl,
-    write('Type "stop." to quit.'), nl,
+    print_board,
     process_option.
 
+% Generare a number of items that should be dropped on the board.
+% C is the count of items returned.
+% The amount of items to be dropped depends on the size of the board.
+% The bigger the board, the more items will be dropped to fill out the board.
 get_item_drop_count(C) :-
     board_size(Size),
     (
@@ -42,7 +41,14 @@ get_item_drop_count(C) :-
     ).
 
 process_option :- write('Option? '),
+    nl, nl,
+    write('Type "print." to view the board.'), nl,
+    write('Type "adj." to see adjacent squares.'), nl,
+    write('Type "nonempty." to see non-empty adjacent squares.'), nl,
+    write('Type "move." to move in another direction.'), nl,
+    write('Type "stop." to quit.'), nl, nl,
     read(Option),
+    print_line_breaker,
     option(Option).
 
 place_player_in_center() :-
@@ -108,7 +114,25 @@ list_non_empty_adjacent_squares :-
     get_adjacent_locations(Vertical, VReduced, _),
     append(HReduced, VReduced, Adj),
     get_non_empty_squares(Adj, _, NonEmpty),
-    write(NonEmpty).
+    print_non_empty_adjacent_squares(NonEmpty).
+
+print_non_empty_adjacent_squares([]).
+print_non_empty_adjacent_squares([square(R, C, I)|T]) :-
+    user_square(Row, Col),
+    item_type(I, ItemName),
+    (
+        R < Row, C = Col ->
+            format('Looks like there might be some ~w up North. (~w, ~w)', [ItemName, R, C]), nl
+        ; R > Row, C = Col ->
+            format('Looks like there might be some ~w down South. (~w, ~w)', [ItemName, R, C]), nl
+        ; R = Row, C < Col ->
+            format('Looks like there might be some ~w to the West. (~w, ~w)', [ItemName, R, C]), nl
+        ; R = Row, C > Col ->
+            format('Looks like there might be some ~w to the East. (~w, ~w)', [ItemName, R, C]), nl
+        ;
+            true
+    ),
+    print_non_empty_adjacent_squares(T).
 
 get_non_empty_squares([], [], []).
 get_non_empty_squares([H|A], [H|E], N) :-
@@ -118,18 +142,52 @@ get_non_empty_squares([H|A], [H|E], N) :-
 get_non_empty_squares([H|A], E, [H|N]) :-
     get_non_empty_squares(A, E, N).
 
-print_board([]).
-print_board([square(_, Col, Item)|T]) :-
+print_board :-
+    findall(square(Row, Col, Item), square(Row, Col, Item), Squares),
+    msort(Squares, Sorted),
+%    board_size(Size),
+%    Dasheses is (Size * 4),
+%    format('~w size line', [Dashes]),
+%    print_line_breaker(Dashes),
+    print_board_square(Sorted),
+    nl,
+    nl,
+    nl.
+
+print_board_square([]).
+print_board_square([square(_, Col, Item)|T]) :-
     (
-        Col = 1 -> nl
+        Col = 1 -> nl, nl
         ; true
     ),
-    format('~w ', [Item]),
-    print_board(T).
+    (
+        is_empty_square(square(_, Col, Item)) -> write(' -  ')
+        ; format(' ~w  ', [Item])
+    ),
+    print_board_square(T).
+
+find_adjacent_locations(Adj) :-
+    user_square(R, C),
+    findall(square(Row, C, Item), square(Row, C, Item), Horizontal),
+    get_adjacent_locations(Horizontal, HReduced, _),
+    findall(square(R, Col, Item), square(R, Col, Item), Vertical),
+    get_adjacent_locations(Vertical, VReduced, _),
+    append(HReduced, VReduced, Adj).
 
 get_adjacent_locations([], [], []).
 get_adjacent_locations([H|T], L, [H|I]) :-
     is_user_square(H),
+    get_adjacent_locations(T, L, I).
+
+get_adjacent_locations([H|T], L, [H|I]) :-
+    user_square(UR, UC),
+    get_coords(H, R, C),
+    (
+        R < (UR - 1) ;
+        R > (UR + 1) ;
+        C < (UC - 1) ;
+        C > (UC + 1)
+    ),
     get_adjacent_locations(T, L, I).
 
 get_adjacent_locations([H|T], [H|L], I) :-
@@ -139,9 +197,6 @@ is_user_square(square(_, _, Item)) :-
     Item = 'P'.
 
 is_empty_square(square(_, _, Item)) :-
-    write('Item: '), nl,
-    write(Item), nl,
-    write(e), nl,
     Item = e.
 
 is_non_empty_square(square(_, _, Item)) :-
@@ -150,6 +205,9 @@ is_non_empty_square(square(_, _, Item)) :-
 user_square(Row, Col) :-
     square(Row, Col, 'P').
 
+get_coords(square(R, C, _), Row, Col) :-
+    Row is R,
+    Col is C.
 
 list_adjacent_options([]).
 list_adjacent_options([square(R, C, _)|T]) :-
@@ -168,32 +226,34 @@ list_adjacent_options([square(R, C, _)|T]) :-
     ),
     list_adjacent_options(T).
 
+print_line_breaker :-
+    write('-------------------------------------------------------'), nl, nl.
+
 option(print) :-
-    findall(square(Row, Col, Item), square(Row, Col, Item), Squares),
-    msort(Squares, Sorted),
-    print_board(Sorted),
-    nl,
-    nl,
+    print_board,
     process_option.
 
 option(adj) :- % List squares that are adjacent to the player
-    user_square(R, C),
-    findall(square(Row, C, Item), square(Row, C, Item), Horizontal),
-    get_adjacent_locations(Horizontal, HReduced, _),
-    findall(square(R, Col, Item), square(R, Col, Item), Vertical),
-    get_adjacent_locations(Vertical, VReduced, _),
-    append(HReduced, VReduced, Adj),
+    find_adjacent_locations(Adj),
     list_adjacent_options(Adj),
     process_option.
 
-option(non) :- % List squares that are adjacent to the player
-    list_non_empty_adjacent_squares.
+option(nonempty) :- % List squares that are adjacent to the player
+    list_non_empty_adjacent_squares, nl,
+    process_option.
 
 option(move) :-
-    write('Which direction? '), nl,
-    write('Type "north.", "south.", "east." or "west." to move.'), nl,
+    write('Which direction would you like to move? '), nl, nl,
+    find_adjacent_locations(Adj),
+    list_adjacent_options(Adj), nl,
+    write('Type "north.", "south.", "east." or "west." to move.'), nl, nl,
     read(Direction),
-    move(Direction),
+    print_line_breaker,
+    (
+        direction(Direction) -> move(Direction)
+        ; format('"~w" is not a valid direction! You have not moved anywhere.', [Direction]), nl
+    ),
+    print_board,
     process_option.
 
 option(inventory) :-
@@ -206,16 +266,3 @@ option(stop) :-
     listing(square),
     told,
     write('Done.'),nl.
-
-
-
-option(list) :- % Not needed - only used for testing
-    findall(square(Row, Col, Item), square(Row, Col, Item), Squares),
-    write(Squares), nl,
-    process_option.
-
-option(sort) :- % Not needed - only used for testing
-    findall(square(Row, Col, Item), square(Row, Col, Item), Squares),
-    msort(Squares, Sorted),
-    write(Sorted), nl,
-    process_option.
