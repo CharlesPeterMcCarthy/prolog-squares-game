@@ -42,6 +42,24 @@ empty_square(Row, Col) :-
     retract(square(Row, Col, _)),
     assertz(square(Row, Col, e)).
 
+list_non_empty_adjacent_squares :-
+    user_square(R, C),
+    findall(square(Row, C, Item), square(Row, C, Item), Horizontal),
+    get_adjacent_locations(Horizontal, HReduced, _),
+    findall(square(R, Col, Item), square(R, Col, Item), Vertical),
+    get_adjacent_locations(Vertical, VReduced, _),
+    append(HReduced, VReduced, Adj),
+    get_non_empty_squares(Adj, _, NonEmpty),
+    write(NonEmpty).
+
+get_non_empty_squares([], [], []).
+get_non_empty_squares([H|A], [H|E], N) :-
+    is_empty_square(H),
+    get_non_empty_squares(A, E, N).
+
+get_non_empty_squares([H|A], E, [H|N]) :-
+    get_non_empty_squares(A, E, N).
+
 print_board([]).
 print_board([square(_, Col, Item)|T]) :-
     (
@@ -61,6 +79,9 @@ get_adjacent_locations([H|T], [H|L], I) :-
 
 is_user_square(square(_, _, Item)) :-
     Item = 'P'.
+
+is_empty_square(square(_, _, Item)) :-
+    Item = 'e'.
 
 user_square(Row, Col) :-
     square(Row, Col, 'P').
@@ -99,9 +120,13 @@ option(adj) :- % List squares that are adjacent to the player
     get_adjacent_locations(Horizontal, HReduced, _),
     findall(square(R, Col, Item), square(R, Col, Item), Vertical),
     get_adjacent_locations(Vertical, VReduced, _),
-    list_adjacent_options(HReduced),
-    list_adjacent_options(VReduced),
+    append(HReduced, VReduced, Adj),
+    list_adjacent_options(Adj),
+%    list_adjacent_options(VReduced),
     process_option.
+
+option(non) :- % List squares that are adjacent to the player
+    list_non_empty_adjacent_squares.
 
 option(move) :-
     write('Which direction? '), nl,
