@@ -11,17 +11,6 @@ createBoard(N) :-
     write('Board has been created.'), nl,
     !.
 
-setBoardSize(N) :-
-    (
-        board_size(_) -> retract(board_size(_))
-        ; true
-    ),
-    assertz(board_size(N)),
-    tell('board-size.pl'),
-    write(':- dynamic(board_size/1).'), nl,
-    listing(board_size),
-    told.
-
 createBoard(1, Col) :-
     createCol(1, Col),
     !.
@@ -36,7 +25,19 @@ createCol(Row, 1) :-
 createCol(CurrentRow, CurrentCol) :-
     NextCol is CurrentCol - 1,
     assertz(square(CurrentRow, CurrentCol, e)),
+%    assertz(original_square(CurrentRow, CurrentCol, e)),
     createCol(CurrentRow, NextCol).
+
+setBoardSize(N) :-
+    (
+        board_size(_) -> retract(board_size(_))
+        ; true
+    ),
+    assertz(board_size(N)),
+    tell('board-size.pl'),
+    write(':- dynamic(board_size/1).'), nl,
+    listing(board_size),
+    told.
 
 persistBoard :-
     tell('squares.pl'),

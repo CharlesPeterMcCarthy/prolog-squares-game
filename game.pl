@@ -3,9 +3,11 @@
 :- ensure_loaded('directions.pl').
 :- ensure_loaded('items.pl').
 :- ensure_loaded('inventory.pl').
+:- ensure_loaded('original-item-positions.pl').
 
 start :-
     empty_inventory,
+    clear_original_item_positions,
     write('Welcome to the Squares game!'), nl,
     write('What size board would you like to play with? Enter board size:'), nl,
     read(Size),
@@ -25,6 +27,7 @@ start :-
     drop_items(C, true),
     drop_items(C, false),
     persistBoard,
+    persist_original_item_positions,
     nl, nl,
     write('Type "print." to view the board.'), nl,
     write('Type "adj." to see adjacent squares.'), nl,
@@ -51,23 +54,23 @@ place_player_in_center() :-
 move_player_to_square(Row, Col) :-
     retract(square(Row, Col, _)),
     assertz(square(Row, Col, 'P')),
-    persist_square_change.
+    persistBoard.
 
 empty_square(Row, Col) :-
     retract(square(Row, Col, _)),
     assertz(square(Row, Col, e)),
-    persist_square_change.
+    persistBoard.
 
 replace_square(Row, Col, Item) :-
     retract(square(Row, Col, _)),
     assertz(square(Row, Col, Item)),
-    persist_square_change.
+    persistBoard.
 
-persist_square_change :-
-    tell('squares.pl'),
-    write(':- dynamic(square/3).'), nl,
-    listing(square),
-    told.
+%persist_square_change :-
+%    tell('squares.pl'),
+%    write(':- dynamic(square/3).'), nl,
+%    listing(square),
+%    told.
 
 drop_item(RandomRow, RandomCol, Desired) :-
     format('Dropping gold at ~wx~w',[RandomRow, RandomCol]), nl,
@@ -79,7 +82,8 @@ drop_item(RandomRow, RandomCol, Desired) :-
 %    desired_items(RandomItems),
     random(0, 3, RI),
     nth0(RI, RandomItems, RandomItem),
-    replace_square(RandomRow, RandomCol, RandomItem).
+    replace_square(RandomRow, RandomCol, RandomItem),
+    assertz(original_item_position(RandomRow, RandomCol, RandomItem)).
 
 % N is the count of items to drop
 % D is a value that specifies whether to drop desired items (true) or undesired items (false)
