@@ -2,6 +2,7 @@
 :- ensure_loaded('squares.pl').
 :- ensure_loaded('directions.pl').
 :- ensure_loaded('items.pl').
+:- ensure_loaded('item-types.pl').
 :- ensure_loaded('inventory.pl').
 :- ensure_loaded('original-item-positions.pl').
 
@@ -167,10 +168,9 @@ list_adjacent_options([square(R, C, _)|T]) :-
         ; R = Row, C > Col ->
             format('You can travel East. (~w, ~w)', [R, C]), nl
         ;
-            write('Received unknown argument.'), nl
+            write('Error - Unknown direction.'), nl
     ),
     list_adjacent_options(T).
-
 
 option(print) :-
     findall(square(Row, Col, Item), square(Row, Col, Item), Squares),
@@ -198,7 +198,10 @@ option(move) :-
     write('Type "north.", "south.", "east." or "west." to move.'), nl,
     read(Direction),
     move(Direction),
-    write('Successfully moved.'),nl,
+    process_option.
+
+option(inventory) :-
+    print_inventory,
     process_option.
 
 option(stop) :-

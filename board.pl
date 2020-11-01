@@ -25,7 +25,6 @@ createCol(Row, 1) :-
 createCol(CurrentRow, CurrentCol) :-
     NextCol is CurrentCol - 1,
     assertz(square(CurrentRow, CurrentCol, e)),
-%    assertz(original_square(CurrentRow, CurrentCol, e)),
     createCol(CurrentRow, NextCol).
 
 setBoardSize(N) :-
