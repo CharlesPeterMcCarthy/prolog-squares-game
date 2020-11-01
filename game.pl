@@ -8,9 +8,13 @@ start :-
     read(Size),
     (
         not(integer(Size)) -> write('You must enter an integer'), nl
-        ; integer(Size) -> format('Generating a ~wx~w board.', [Size, Size]), nl
+        ; true
     ),
-    integer(Size),
+    (
+        Size < 3 -> format('The minimum board size is 3x3. You entered the number ~w. Type "start." to try again.', [Size]), nl, fail
+        ; Size > 8 -> format('The maximum board size is 8x8. You entered the number ~w. Type "start." to try again.', [Size]), nl, fail
+        ; true
+    ),
     createBoard(Size),
     place_player_in_center,
     persistBoard,
@@ -37,31 +41,13 @@ empty_square(Row, Col) :-
     assertz(square(Row, Col, e)).
 
 print_board([]).
-print_board([square(_, _, Item)|T]) :-
-%    indexOf([square(_, _, Item)|T], square(_, _, Item), A),
-%    X is X+1,
-%    (Row is 3, nl),
-%    write(A), nl,
-    write(Item), nl,
+print_board([square(_, Col, Item)|T]) :-
+    (
+        Col = 1 -> nl
+        ; true
+    ),
+    format('~w ', [Item]),
     print_board(T).
-
-%print_board2(Squares) :-
-%    print_row(Squares, 1),
-%    print_row(Squares, 2),
-%    print_row(Squares, 3).
-
-%print_row([], _).
-%print_row([square(Col, _, Item)|T], R) :-
-%    write(R), nl,
-%    write(Col), nl,
-%    R = Col,
-%    write(Item), nl,
-%    print_row(T, R).
-
-% Print board: Possibly loop over squares, keep a list of lists. Add square to sub-list by index (row = index)
-
-%get_player_location(X, Y) :-
-%    square(X, Y, 'P').
 
 get_adjacent_locations([], [], []).
 get_adjacent_locations([H|T], L, [H|I]) :-
@@ -101,7 +87,8 @@ option(print) :-
     findall(square(Row, Col, Item), square(Row, Col, Item), Squares),
     msort(Squares, Sorted),
     print_board(Sorted),
-%    print_board2(Sorted),
+    nl,
+    nl,
     process_option.
 
 option(adj) :- % List squares that are adjacent to the player
