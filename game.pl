@@ -1,8 +1,11 @@
 :- ensure_loaded('board.pl').
 :- ensure_loaded('squares.pl').
 :- ensure_loaded('directions.pl').
+:- ensure_loaded('items.pl').
+:- ensure_loaded('inventory.pl').
 
 start :-
+    empty_inventory,
     write('Welcome to the Squares game!'), nl,
     write('What size board would you like to play with? Enter board size:'), nl,
     read(Size),
@@ -15,6 +18,7 @@ start :-
         ; Size > 8 -> format('The maximum board size is 8x8. You entered the number ~w. Type "start." to try again.', [Size]), nl, fail
         ; true
     ),
+
     createBoard(Size),
     place_player_in_center,
     get_item_drop_count(C),
@@ -46,15 +50,24 @@ place_player_in_center() :-
 
 move_player_to_square(Row, Col) :-
     retract(square(Row, Col, _)),
-    assertz(square(Row, Col, 'P')).
+    assertz(square(Row, Col, 'P')),
+    persist_square_change.
 
 empty_square(Row, Col) :-
     retract(square(Row, Col, _)),
-    assertz(square(Row, Col, e)).
+    assertz(square(Row, Col, e)),
+    persist_square_change.
 
 replace_square(Row, Col, Item) :-
     retract(square(Row, Col, _)),
-    assertz(square(Row, Col, Item)).
+    assertz(square(Row, Col, Item)),
+    persist_square_change.
+
+persist_square_change :-
+    tell('squares.pl'),
+    write(':- dynamic(square/3).'), nl,
+    listing(square),
+    told.
 
 drop_item(RandomRow, RandomCol, Desired) :-
     format('Dropping gold at ~wx~w',[RandomRow, RandomCol]), nl,
@@ -85,9 +98,6 @@ drop_items(N, D) :-
         ItemsLeft > 0 -> drop_items(ItemsLeft, D)
         ; true
     ).
-
-desired_items(['G', 'S', 'B']).
-undesired_items(['X', 'Y', 'Z']).
 
 list_non_empty_adjacent_squares :-
     user_square(R, C),
