@@ -30,7 +30,9 @@ process_option :- write('Option? '),
     option(Option).
 
 place_player_in_center() :-
-    move_player_to_square(2, 2).
+    board_size(Size),
+    Halfway is ceiling(Size / 2),
+    move_player_to_square(Halfway, Halfway).
 
 move_player_to_square(Row, Col) :-
     retract(square(Row, Col, _)),

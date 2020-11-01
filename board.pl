@@ -1,6 +1,8 @@
 :- ensure_loaded('squares.pl').
+:- ensure_loaded('board-size.pl').
 
 createBoard(N) :-
+    setBoardSize(N),
     findall(square(R, Col, Item), square(R, Col, Item), Squares),
     removeSquares(Squares),
     persistBoard,
@@ -8,6 +10,17 @@ createBoard(N) :-
     persistBoard,
     write('Board has been created.'), nl,
     !.
+
+setBoardSize(N) :-
+    (
+        board_size(_) -> retract(board_size(_))
+        ; true
+    ),
+    assertz(board_size(N)),
+    tell('board-size.pl'),
+    write(':- dynamic(board_size/1).'), nl,
+    listing(board_size),
+    told.
 
 createBoard(1, Col) :-
     createCol(1, Col),
