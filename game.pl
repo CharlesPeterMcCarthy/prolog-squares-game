@@ -40,7 +40,9 @@ get_item_drop_count(C) :-
         ; C is Size
     ).
 
-process_option :- write('Option? '),
+process_option :-
+    nl,
+    write('Option? '),
     nl, nl,
     write('Type "print." to view the board.'), nl,
     write('Type "adj." to see adjacent squares.'), nl,
@@ -50,6 +52,9 @@ process_option :- write('Option? '),
     read(Option),
     print_line_breaker,
     option(Option).
+
+print_line_breaker :-
+    write('-------------------------------------------------------'), nl, nl.
 
 place_player_in_center() :-
     board_size(Size),
@@ -71,14 +76,7 @@ replace_square(Row, Col, Item) :-
     assertz(square(Row, Col, Item)),
     persistBoard.
 
-%persist_square_change :-
-%    tell('squares.pl'),
-%    write(':- dynamic(square/3).'), nl,
-%    listing(square),
-%    told.
-
 drop_item(RandomRow, RandomCol, Desired) :-
-    format('Dropping gold at ~wx~w',[RandomRow, RandomCol]), nl,
     empty_square(RandomRow, RandomCol),
     (
         Desired = true -> desired_items(RandomItems)
@@ -91,7 +89,6 @@ drop_item(RandomRow, RandomCol, Desired) :-
 % N is the count of items to drop
 % D is a value that specifies whether to drop desired items (true) or undesired items (false)
 drop_items(N, D) :-
-    format('Dropping item ~w', [N]), nl,
     board_size(BoardSize),
     RangeSize is BoardSize + 1,
     random(1, RangeSize, RandomRow),
@@ -114,7 +111,10 @@ list_non_empty_adjacent_squares :-
     get_adjacent_locations(Vertical, VReduced, _),
     append(HReduced, VReduced, Adj),
     get_non_empty_squares(Adj, _, NonEmpty),
-    print_non_empty_adjacent_squares(NonEmpty).
+    (
+        NonEmpty = [] -> write('Looks like there are no items nearby.'), nl
+        ; print_non_empty_adjacent_squares(NonEmpty)
+    ).
 
 print_non_empty_adjacent_squares([]).
 print_non_empty_adjacent_squares([square(R, C, I)|T]) :-
@@ -145,14 +145,8 @@ get_non_empty_squares([H|A], E, [H|N]) :-
 print_board :-
     findall(square(Row, Col, Item), square(Row, Col, Item), Squares),
     msort(Squares, Sorted),
-%    board_size(Size),
-%    Dasheses is (Size * 4),
-%    format('~w size line', [Dashes]),
-%    print_line_breaker(Dashes),
     print_board_square(Sorted),
-    nl,
-    nl,
-    nl.
+    nl, nl.
 
 print_board_square([]).
 print_board_square([square(_, Col, Item)|T]) :-
@@ -226,8 +220,14 @@ list_adjacent_options([square(R, C, _)|T]) :-
     ),
     list_adjacent_options(T).
 
-print_line_breaker :-
-    write('-------------------------------------------------------'), nl, nl.
+check_for_game_end :-
+    (
+        not(square(_, _, 'G')), not(square(_, _, 'S')), not(square(_, _, 'B')) ->
+                format('You win! You collected all desireable items. Congrats!'),
+                print_board,
+                false
+        ; true
+    ).
 
 option(print) :-
     print_board,
@@ -261,8 +261,4 @@ option(inventory) :-
     process_option.
 
 option(stop) :-
-    tell('squares.pl'),
-    write(':- dynamic(square/3).'), nl,
-    listing(square),
-    told,
-    write('Done.'),nl.
+    write('Thanks for playing! Goodbye.'), nl.

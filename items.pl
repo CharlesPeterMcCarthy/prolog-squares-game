@@ -10,9 +10,12 @@ check_for_dropped_item(R, C) :-
     undesired_items(UI),
     (
         member(Item, DI) -> item_type(Item, Name),
-                            format('You found a desired item: ~w', [Name]),
+                            format('You found a desired item: ~w', [Name]), nl,
+                            write('It has been added to your inventory.'), nl, nl,
                             save_item_to_inventory(Item),
-                            save_item_position(R, C, Item)
+                            empty_square(R, C),
+                            save_item_position(R, C, Item),
+                            check_for_game_end
         ; member(Item, UI) -> prompt_item_loss(Item)
         ; write('You moved to an empty square')
     ),
