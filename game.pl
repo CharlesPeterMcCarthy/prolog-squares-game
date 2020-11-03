@@ -50,6 +50,7 @@ process_option :-
     write('Type "print." to view the board.'), nl,
     write('Type "adj." to see adjacent squares.'), nl,
     write('Type "nonempty." to see non-empty adjacent squares.'), nl,
+    write('Type "inventory." to see your inventory items.'), nl,
     write('Type "move." to move in another direction.'), nl,
     write('Type "stop." to quit.'), nl, nl,
     read(Option),
@@ -263,6 +264,20 @@ check_for_game_end :-
 play_again(yes) :-
     start.
 
+% Exit the game
+play_again(no) :-
+    stop_game,
+    !.
+
+% Invalid end of game option
+play_again(_) :-
+    write('That was an invalid option.'), nl, nl,
+    check_for_game_end.
+
+stop_game :-
+    write('Thanks for playing! Goodbye.'), nl,
+    halt.
+
 % User option to print the game board in its current state
 option(print) :-
     print_board,
@@ -301,7 +316,7 @@ option(inventory) :-
 
 % User option to end the game
 option(stop) :-
-    write('Thanks for playing! Goodbye.'), nl.
+    stop_game.
 
 % Any other option typed in that does not match any of the specified predicates above
 option(_) :-
