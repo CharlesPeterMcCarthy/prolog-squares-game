@@ -1,3 +1,5 @@
+% These are item types - Containing the symbol that is displayed on the board as well as the full name of the item
+
 % Desireable types
 item_type('G', 'Gold').
 item_type('S', 'Silver').
